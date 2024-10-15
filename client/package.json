@@ -1,0 +1,43 @@
+{
+  "name": "callanalytics",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^2.8.2",
+    "@clerk/clerk-react": "^5.11.0",
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@refinedev/core": "^4.54.1",
+    "@refinedev/react-router-v6": "^4.6.0",
+    "@tanstack/react-query": "^5.56.2",
+    "axios": "^1.7.7",
+    "chart.js": "^4.4.4",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.2.10",
+    "file-saver": "^2.0.5",
+    "framer-motion": "^11.5.4",
+    "next": "^14.2.10",
+    "papaparse": "^5.4.1",
+    "react": "^18",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18",
+    "react-icons": "^5.3.0",
+    "react-query": "^3.39.3",
+    "react-router-dom": "^6.26.2",
+    "react-spring": "^9.7.4",
+    "react-typed": "^2.0.12",
+    "recharts": "^2.12.7",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.11"
+  }
+}
