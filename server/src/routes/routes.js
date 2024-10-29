@@ -160,8 +160,7 @@ router.post('/monitor', async (req, res) => {
 router.put('/branding/:user_id', upload.fields([{ name: 'logo' }, { name: 'favicon' }]), UserController.updateBranding);
 router.get('/branding/:user_id', UserController.getBranding);
 
-// Create a Stripe customer
-router.post('/create-customer', BillingController.createCustomer);
+
 
 // Only Admins can access this route
 router.get('/admin-data', AuthMiddleware.verifyClerkToken, AuthMiddleware.checkRole('Admin'), (req, res) => {
@@ -194,6 +193,13 @@ router.get('/analytics', AuthMiddleware.verifyClerkToken, AuthMiddleware.checkPe
 router.post('/add-user-to-agency', AuthMiddleware.verifyClerkToken, AuthMiddleware.checkRole('Agency Owner'), UserController.addUserToAgency);
 router.put('/update-billing-features', AuthMiddleware.verifyClerkToken, UserController.updateBillingFeatures);
 
+// Route to create a Stripe Connect account
+router.post('/account', BillingController.createStripeAccount);
 
+// Route to create a Stripe account session (onboarding)
+router.post('/account_session', BillingController.createAccountSession);
 
+router.get('/invoice/:userId', BillingController.getStripeInvoice);
+// Create a Stripe customer
+router.post('/create-customer', BillingController.createCustomer);
 export default router;

@@ -7,7 +7,8 @@ const AuthController = {
     const clerkUser = await clerk.users.getUser(clerkUserId);
     const email = clerkUser.emailAddresses[0]?.emailAddress;
     const fullName = `${clerkUser.firstName} ${clerkUser.lastName}`;
-
+    console.log(clerkUser);
+    
     // Check if user exists in Supabase
     const { data: existingUser, error } = await supabase
       .from('users')
@@ -17,7 +18,7 @@ const AuthController = {
 
     if (existingUser) {
       // Handle OAuth login logic
-      if (!existingUser.publicMetadata?.role) {
+      if (!clerkUser.publicMetadata?.role) {
         // Assign default role if none exists (e.g., 'User')
         await clerk.users.updateUser(clerkUserId, {
           publicMetadata: { role: 'User' },
@@ -39,7 +40,7 @@ const AuthController = {
     }
 
     // Handle OAuth login logic for new user
-    if (!newUser.publicMetadata?.role) {
+    if (!clerkUser.publicMetadata?.role) {
       // Assign default role if none exists (e.g., 'User')
       await clerk.users.updateUser(clerkUserId, {
         publicMetadata: { role: 'User' },

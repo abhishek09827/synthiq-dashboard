@@ -85,6 +85,8 @@ async fetchAndUpdateCalls(req, res) {
       }));
     }
     // Pass calls to service for Supabase upsert operation
+    console.log(filteredCalls);
+    
     await CallService.upsertCalls(filteredCalls);
 
     res.status(200).json({ message: 'Calls fetched and updated successfully.' });

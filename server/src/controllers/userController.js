@@ -1,6 +1,15 @@
 import { supabase } from "../config/supabaseClient.js";
 import clerk from "../config/clerkClient.js";
 import {uploadFile} from "../utils/uploadFileUtils.js";
+import BillingController from "./billingController.js";
+import crypto from 'crypto';
+
+// Generate a random `state` parameter
+const generateState = () => {
+    return crypto.randomBytes(16).toString('hex'); // Generates a 32-character long hex string
+};
+
+
 const UserController = {
     // Get all users (Super Admin only)
     async addUser(req, res) {
@@ -239,7 +248,7 @@ const UserController = {
     },
     // Update user billing features (Super Admin and Agency Owner only)
     async updateBillingFeatures(req, res) {
-      const { userId, start_date, monthly_charge, per_min_charge } = req.body.billingFeatures;
+      const { userId, effective_from, monthly_charge, per_min_charge, threshold_duration, per_min_charge_above_threshold } = req.body.billingFeatures;
 
       // Ensure the user making the request is a Super Admin or Agency Owner
       if (!['Super Admin', 'AgencyOwner'].includes(req.auth.publicMetadata.role)) {
@@ -256,13 +265,63 @@ const UserController = {
 
       const { data, error } = await supabase.from('users').update({ 
         billing_features: {
-          start_date: start_date,
+          effective_from: effective_from,
           monthly_charge: monthly_charge,
-          per_min_charge: per_min_charge
+          per_min_charge: per_min_charge,
+          threshold_duration: threshold_duration,
+          per_min_charge_above_threshold: per_min_charge_above_threshold
         }
       }).eq('id', userId);
       if (error) return res.status(500).json({ error: 'Error updating billing features' });
       res.json({ message: 'Billing features updated successfully' });
+    },
+    // Fetch billing features for a user (Admin, Super Admin, and Agency Owner)
+    async fetchBillingFeatures(req, res) {
+      const { id } = req.params;
+
+      // Ensure the target user is part of the same agency if the requester is an Agency Owner
+      if (req.auth.publicMetadata.role === 'AgencyOwner') {
+        const targetUser = await clerk.users.getUser(id);
+        if (targetUser.publicMetadata.agencyId !== req.auth.publicMetadata.agencyId) {
+          return res.status(403).json({ message: 'Access Denied: You can only view users in your own agency.' });
+        }
+      }
+
+      const { data: user, error } = await supabase.from('users').select('billing_features').eq('id', id).single();
+      if (error) return res.status(500).json({ error: 'Error fetching billing features' });
+      res.json(user.billing_features);
+    },
+    // Update billing features and create a Stripe Customer
+    async generatePayment(req, res) {
+      const { userId, token } = req.body;
+
+      // Ensure the user making the request is a Super Admin or Agency Owner
+      if (!['Super Admin', 'AgencyOwner'].includes(req.auth.publicMetadata.role)) {
+        return res.status(403).json({ message: 'Access Denied' });
+      }
+
+      // Ensure the target user is part of the same agency if the requester is an Agency Owner
+      if (req.auth.publicMetadata.role === 'AgencyOwner') {
+        const targetUser = await clerk.users.getUser(userId);
+        if (targetUser.publicMetadata.agencyId !== req.auth.publicMetadata.agencyId) {
+          return res.status(403).json({ message: 'Access Denied: You can only manage users in your own agency.' });
+        }
+      }
+
+      const { data: user, error } = await supabase.from('users').select('*').eq('id', userId).single();
+      if (error) return res.status(500).json({ error: 'Error updating billing features' });
+
+      // Create a Stripe Customer with the BillingFeatures
+      const customer = await BillingController.createCustomer({
+        token: token,
+        name: user.full_name,
+        address: null,
+        amount: amount * 100, // Convert to cents
+        currency: 'usd',
+        desc: 'Billing features updated',
+      });
+
+      res.json({ message: 'Billing features updated and customer created successfully', customer });
     },
     // Get user details (Admin, Super Admin, and Agency Owner)
     async getUserDetails(req, res) {
@@ -357,6 +416,8 @@ const UserController = {
     }catch (error) {
     console.error('Error fetching branding:', error);
     res.status(500).json({ message: 'Failed to fetch branding.' });
-}}
+}},
+
+
 };
 export default UserController;

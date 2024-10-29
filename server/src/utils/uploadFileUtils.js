@@ -1,6 +1,6 @@
 // uploadFile.js
 import cloudinary from '../config/cloudinaryConfig.js';
-
+import fs from "fs";
 /**
  * Uploads a file to Cloudinary and returns the URL of the uploaded file.
  * 
@@ -21,7 +21,6 @@ export const uploadFile = async (filePath, options = {}) => {
 
     console.log('File uploaded successfully:', result);
     // Remove the file from the local upload folder after successful upload
-    const fs = require('fs');
     fs.unlinkSync(filePath);
     console.log('File removed from local upload folder:', filePath);
     return result.secure_url; // Return the URL of the uploaded file
