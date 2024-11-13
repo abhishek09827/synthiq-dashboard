@@ -22,6 +22,8 @@ const notificationTemplates = {
 
 export const triggerNotification = async (email, event, data) => {
   if (await shouldNotify(email, event)) {
+    console.log("In");
+    
     const { subject, html } = notificationTemplates[event](data);
     console.log(subject, html);
     try {

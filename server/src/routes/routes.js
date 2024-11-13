@@ -14,6 +14,7 @@ import AuthController from '../controllers/authController.js';
 import CallService from '../services/callService.js';
 import UserService from '../services/userService.js';
 import BillingController from '../controllers/billingController.js';
+import VapiCallController from '../controllers/vapiCallController.js';
 import upload from '../middlewares/multerMiddleware.js';
 const router = Router();
 
@@ -202,4 +203,12 @@ router.post('/account_session', BillingController.createAccountSession);
 router.get('/invoice/:userId', BillingController.getStripeInvoice);
 // Create a Stripe customer
 router.post('/create-customer', BillingController.createCustomer);
+
+router.post('/start-call', VapiCallController.startCall);
+
+router.patch("/file/:id", VapiCallController.updateFile);
+router.get("/getFiles", VapiCallController.fetchFile);
+router.get("/assistant/:id", VapiCallController.fetchAssistantById);
+router.post("/uploadFile", upload.single('file'), VapiCallController.uploadFile);
+
 export default router;

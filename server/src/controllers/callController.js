@@ -27,7 +27,7 @@ async fetchAndUpdateCalls(req, res) {
     if (!user || !user.bearer_token) {
       return res.status(403).json({ error: 'Unauthorized: No token found for user' });
     }
-    const response = await axios.get('https://api.vapi.ai/call', {
+    const response = await axios.get('https://api.vapi.ai/call?limit=500', {
       headers: {
         Authorization: `Bearer ${user.bearer_token}`
       },

@@ -74,9 +74,7 @@ async calculateTotalMinutes(calls) {
     let totalMinutes = 0;
 
     calls.forEach(call => {
-      const startTime = new Date(call.startedat);
-      const endTime = new Date(call.endedat);
-      const duration = (endTime - startTime) / 1000 / 60; // Convert milliseconds to minutes
+      const duration = call.duration_in_minutes // Convert milliseconds to minutes
       totalMinutes += duration;
     });
 
@@ -100,9 +98,8 @@ async calculateAverageCallDuration(calls) {
   let totalDuration = 0;
 
   calls.forEach(call => {
-    const startTime = new Date(call.startedat);
-    const endTime = new Date(call.endedat);
-    const duration = (endTime - startTime) / 1000 / 60; // Convert milliseconds to minutes
+
+    const duration = call.duration_in_minutes // Convert milliseconds to minutes
     totalDuration += duration;
   });
 
@@ -201,14 +198,16 @@ async fetchCallLogs(userId, filters){
 async monitorUsage(user) {
   const { usage, limit, email, alertMethod, slackChannel } = user;
   const usageRatio = usage / limit;
+  console.log(usageRatio);
+  
 
-  if (usageRatio >= USAGE_THRESHOLDS.CRITICAL) {
+  if (usageRatio >= user.usage_threshold.CRITICAL) {
     if (alertMethod === 'mail') {
       await triggerNotification(email, 'CRITICAL_USAGE', { usage, limit });
     } else if (alertMethod === 'slack' && slackChannel) {
       await sendSlackNotification(slackChannel, `Critical Usage Alert: Your usage (${usage}) has almost reached your limit (${limit})!`);
     }
-  } else if (usageRatio >= USAGE_THRESHOLDS.HIGH) {
+  } if (usageRatio >= user.usage_threshold.HIGH) {
     if (alertMethod === 'mail') {
       await triggerNotification(email, 'HIGH_USAGE', { usage, limit });
     } else if (alertMethod === 'slack' && slackChannel) {
