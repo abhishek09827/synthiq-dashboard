@@ -36,7 +36,7 @@ export default class VapiCallController {
       const modelResponse = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.VAPI_API_KEYs}`,
+          'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
           'Content-Type': 'application/json'
         }
       });
@@ -46,7 +46,7 @@ export default class VapiCallController {
       const options = {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${process.env.VAPI_API_KEYs}`,
+          'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -79,7 +79,7 @@ export default class VapiCallController {
       const response = await fetch(`https://api.vapi.ai/assistant/${id}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.VAPI_API_KEYs}`,
+          'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
           'Content-Type': 'application/json'
         }
       });
@@ -97,7 +97,7 @@ export default class VapiCallController {
       const response = await fetch(`https://api.vapi.ai/file`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.VAPI_API_KEYs}`
+          'Authorization': `Bearer ${process.env.VAPI_API_KEY}`
         }
       });
       const data = await response.json();

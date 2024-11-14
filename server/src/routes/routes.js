@@ -16,6 +16,7 @@ import UserService from '../services/userService.js';
 import BillingController from '../controllers/billingController.js';
 import VapiCallController from '../controllers/vapiCallController.js';
 import upload from '../middlewares/multerMiddleware.js';
+import RetellCallController from '../controllers/retellCallController.js';
 const router = Router();
 
 /**
@@ -210,5 +211,8 @@ router.patch("/file/:id", VapiCallController.updateFile);
 router.get("/getFiles", VapiCallController.fetchFile);
 router.get("/assistant/:id", VapiCallController.fetchAssistantById);
 router.post("/uploadFile", upload.single('file'), VapiCallController.uploadFile);
+
+router.post('/retell-list-calls',AuthMiddleware.verifyClerkToken, RetellCallController.listCalls);
+
 
 export default router;
