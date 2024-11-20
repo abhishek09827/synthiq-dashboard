@@ -132,6 +132,30 @@ async getAnalytics (req, res){
   }
 },
 
+async getAnalyticsRetell (req, res){
+  try {
+    const userId = req.auth.id;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const calls = await CallService.getAllCallsRetell(userId);
+    // Calculate Total Minutes, Call Cost, and Average Call Duration
+    const totalMinutes = await CallService.calculateTotalMinutesRetell(calls);
+    const averageCallDuration = await CallService.calculateAverageCallDurationRetell(calls);
+    const getCallOutcomes  = await CallService.calculateCallOutcomeStatisticsRetell(calls);
+    // Return all the analytics in one response
+    res.status(200).json({
+      totalMinutes,
+      averageCallDuration,
+      getCallOutcomes
+    });
+  } catch (error) {
+    console.error('Error calculating analytics:', error);
+    res.status(500).json({ error: error.message });
+  }
+},
+
 // Fetch call logs with filtering and sorting
 async getCallLogs(req, res) {
   try {
@@ -139,6 +163,27 @@ async getCallLogs(req, res) {
 
     // Fetch filtered and sorted call logs
     const callLogs = await CallService.fetchCallLogs(req.auth.id,{
+      startDate,
+      endDate,
+      type,
+      sortBy,
+      sortOrder,
+      endedreason
+    });
+
+    res.status(200).json({ callLogs });
+  } catch (error) {
+    console.error('Error fetching call logs:', error);
+    res.status(500).json({ error: 'Error fetching call logs' });
+  }
+},
+
+async getCallLogsRetell(req, res) {
+  try {
+    const { startDate, endDate, type, sortBy, sortOrder, endedreason } = req.query;
+
+    // Fetch filtered and sorted call logs
+    const callLogs = await CallService.fetchCallLogsRetell(req.auth.id,{
       startDate,
       endDate,
       type,

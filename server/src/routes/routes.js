@@ -212,7 +212,10 @@ router.get("/getFiles", VapiCallController.fetchFile);
 router.get("/assistant/:id", VapiCallController.fetchAssistantById);
 router.post("/uploadFile", upload.single('file'), VapiCallController.uploadFile);
 
-router.post('/retell-list-calls',AuthMiddleware.verifyClerkToken, RetellCallController.listCalls);
+router.post('/retell-call-logs',AuthMiddleware.verifyClerkToken, RetellCallController.fetchAndUpdateCalls);
+router.post('/call-logs-retell',AuthMiddleware.verifyClerkToken, CallController.getCallLogsRetell);
+
+router.post('/analytics-retell',AuthMiddleware.verifyClerkToken, CallController.getAnalyticsRetell);
 
 
 export default router;

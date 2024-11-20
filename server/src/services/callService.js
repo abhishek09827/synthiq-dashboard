@@ -24,6 +24,21 @@ async upsertCalls(calls) {
       }
 },
 
+async upsertCallsRetell(calls) {
+  try {
+    const { data, error } = await supabase
+      .from('callsretell')
+      .insert(calls);
+    if (error) {
+      console.error('Error inserting calls:', error);
+      throw new Error('Failed to upsert calls');
+    }
+  } catch (error) {
+    console.error('Error upserting calls:', error);
+    throw new Error('Failed to upsert calls');
+  }
+},
+
 async maxUpdatedAt(id) {
     
     // Fetch the maximum updated_at timestamp from the existing calls
@@ -58,6 +73,40 @@ async maxUpdatedAt(id) {
     }
 },
 
+async maxUpdatedAtRetell(id) {
+    
+  // Fetch the maximum updated_at timestamp from the existing calls
+  try {
+    const { data: maxUpdatedAtData, error: maxUpdatedAtError } = await supabase
+      .from('users')
+      .select('updatedatRetell')
+      .eq("id", id)
+
+    if (maxUpdatedAtError) {
+      console.error('Error fetching max updated_at:', maxUpdatedAtError);
+      throw new Error('Failed to fetch max updated_at');
+    }
+
+    if (!maxUpdatedAtData[0].updatedatRetell) {
+      const maxUpdatedAt = new Date().toISOString();
+      try {
+        await supabase
+          .from('users')
+          .update({ updatedatRetell: maxUpdatedAt })
+          .eq("id", id)
+      } catch (error) {
+        console.error('Error updating max updated_at:', error);
+        throw new Error('Failed to update max updated_at');
+      }
+    }
+
+    return maxUpdatedAtData[0].updatedatRetell;
+  } catch (error) {
+    console.error('Error fetching max updated_at:', error);
+    throw new Error('Failed to fetch max updated_at');
+  }
+},
+
 async getAllCalls(userId) {
   try {
     const { data, error } = await supabase.from('calls').select('*').eq('user_id', userId);
@@ -69,7 +118,30 @@ async getAllCalls(userId) {
   }
 },
 
-async calculateTotalMinutes(calls) {
+async getAllCallsRetell(userId) {
+  try {
+    const { data, error } = await supabase.from('callsretell').select('*').eq('user_id', userId);
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching all calls:', error);
+    throw new Error('Failed to fetch all calls');
+  }
+},
+
+async calculateTotalMinutesRetell(calls) {
+
+    let totalMinutes = 0;
+
+    calls.forEach(call => {
+      const duration = call.duration_in_minutes / 60 ; // Convert milliseconds to minutes
+      totalMinutes += duration;
+    });
+
+    return totalMinutes.toFixed(2);
+  },
+
+  async calculateTotalMinutes(calls) {
 
     let totalMinutes = 0;
 
@@ -80,7 +152,6 @@ async calculateTotalMinutes(calls) {
 
     return totalMinutes.toFixed(2);
   },
-
   // Calculate Total Call Cost
 async calculateCallCost(calls) {
 
@@ -100,6 +171,19 @@ async calculateAverageCallDuration(calls) {
   calls.forEach(call => {
 
     const duration = call.duration_in_minutes // Convert milliseconds to minutes
+    totalDuration += duration;
+  });
+
+  const averageDuration = totalDuration / calls.length;
+  return averageDuration.toFixed(2);
+},
+
+async calculateAverageCallDurationRetell(calls) {
+  let totalDuration = 0;
+
+  calls.forEach(call => {
+
+    const duration = call.duration_in_minutes / 60 // Convert milliseconds to minutes
     totalDuration += duration;
   });
 
@@ -142,6 +226,18 @@ async calculateCallOutcomeStatistics (calls) {
   const outcomes = {};
   calls.forEach((call) => {
     const reason = call.endedreason;
+    if (!outcomes[reason]) {
+      outcomes[reason] = 0;
+    }
+    outcomes[reason]++;
+  });
+  return outcomes;
+},
+
+async calculateCallOutcomeStatisticsRetell (calls) {
+  const outcomes = {};
+  calls.forEach((call) => {
+    const reason = call.disconnection_reason;
     if (!outcomes[reason]) {
       outcomes[reason] = 0;
     }
@@ -193,6 +289,47 @@ async fetchCallLogs(userId, filters){
   }
 },
 
+async fetchCallLogsRetell(userId, filters){
+  try {
+    const { startDate, endDate, type, sortBy, sortOrder, endedreason } = filters || {};
+
+    let query = supabase
+      .from('callsretell')
+      .select('*')
+      .eq('user_id', userId);
+
+    // Apply date range filter
+    if (startDate && endDate) {
+      query = query.gte('start_timestamp', startDate).lte('end_timestamp', endDate);
+    }
+
+    if (endedreason) {
+      query = query.eq('disconnection_reason', endedreason)
+    }
+
+    // Apply type filter
+    if (type) {
+      query = query.eq('call_type', type);
+    }
+    // Apply sorting
+    if (sortBy) {
+      const order = sortOrder === 'desc' ? 'desc' : 'asc'; // Default to ascending order
+      query = query.order(sortBy, { ascending: order === 'asc' });
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching call logs:', error);
+      throw new Error('Failed to fetch call logs');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching call logs:', error);
+    throw new Error('Failed to fetch call logs');
+  }
+},
 
 // Monitor usage and trigger notifications
 async monitorUsage(user) {
