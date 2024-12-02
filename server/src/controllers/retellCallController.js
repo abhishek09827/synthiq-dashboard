@@ -52,6 +52,7 @@ const RetellCallController = {
             llm_websocket_network_rtt_latency:call.llm_websocket_network_rtt_latency,
             disconnection_reason:call.disconnection_reason,
             call_analysis:call.call_analysis,
+            call_cost: call.call_cost !== undefined ? call.call_cost : null,
             user_id: userId
           }));
         } else {
@@ -80,6 +81,7 @@ const RetellCallController = {
             llm_websocket_network_rtt_latency:call.llm_websocket_network_rtt_latency,
             disconnection_reason:call.disconnection_reason,
             call_analysis:call.call_analysis,
+            call_cost: call.call_cost !== undefined ? call.call_cost : null,
     user_id: userId
         }));
       }
