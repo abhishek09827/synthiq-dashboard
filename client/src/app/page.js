@@ -1,7 +1,6 @@
-// src/pages/Home.jsx
 "use client";
 import { useState, useEffect } from "react";
-import { Box, Flex, Grid, GridItem, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, Grid, Stack, Text } from "@chakra-ui/react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import AnalyticsCard from "@/components/AnalyticsCard";
@@ -18,11 +17,11 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [headingText, setHeadingText] = useState("");
-  const [primaryColor, setPrimaryColor] = useState(() => {
-    return localStorage.getItem("primaryColor") || "#00BFFF"; // Default color
-  });
+  const [primaryColor, setPrimaryColor] = useState(
+    () => localStorage.getItem("primaryColor") || "#00BFFF"
+  );
 
-  const cardBg = "black";
+  const cardBg = primaryColor;
   const borderColor = "gray.700";
   const fontColor = "white";
   const headingColor = "#1662D4";
@@ -34,7 +33,6 @@ export default function Home() {
         const result = await fetchCalls();
         setData(result);
 
-        // Transform callVolumeTrends into an array
         if (result.getCallVolumeTrends) {
           const trendsArray = Object.entries(result.getCallVolumeTrends).map(
             ([date, volume]) => ({ date, volume })
@@ -49,6 +47,17 @@ export default function Home() {
     };
 
     fetchData();
+
+    const handleColorChange = () => {
+      const color = localStorage.getItem("primaryColor") || "#00BFFF";
+      setPrimaryColor(color); // Update state instead of redeclaring
+    };
+
+    window.addEventListener("storage", handleColorChange);
+
+    return () => {
+      window.removeEventListener("storage", handleColorChange);
+    };
   }, []);
 
   if (isLoading) return <Text color={fontColor}>Loading...</Text>;
@@ -85,34 +94,15 @@ export default function Home() {
   ];
 
   const quotes = [
-    "Success is not final; failure is not fatal: It is the courage to continue that counts.",
-    "Believe you can and you're halfway there.",
-    "The only way to do great work is to love what you do.",
-    "Strive not to be a success, but rather to be of value.",
-    "I attribute my success to this: I never gave or took any excuse.",
-    "The harder the conflict, the more glorious the triumph.",
+    "Our analytics dashboard empowers you to monitor and optimize performance seamlessly.",
+    "Track, analyze, and elevate your metrics with our intuitive analytics dashboard.",
+    "Get real-time insights and actionable data, tailored to your business needs.",
+    "Unlock the full potential of your operations with powerful analytics at your fingertips.",
+    "Designed for businesses looking to enhance their data-driven decision-making processes.",
+    "Stay ahead of the curve with our advanced analytics tools and reporting features.",
   ];
 
-  const cardsContent = quotes.map((quote, idx) => (
-    <Box
-      bg="black"
-      p={6}
-      borderRadius="md"
-      color="white"
-      key={idx}
-      textAlign="center"
-      fontSize={{ base: "md", md: "lg", lg: "xl" }}
-      fontStyle="italic"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      _hover={{
-        boxShadow: "0 4px 20px blue",
-      }}
-    >
-      "{quote}"
-    </Box>
-  ));
+  const footerText = "Quotes to inspire and motivate you daily.";
 
   return (
     <Box
@@ -121,15 +111,19 @@ export default function Home() {
       display="flex"
       flexDirection="column"
       bg="black"
+      overflowX="hidden"
     >
-      <Header headingText={headingText} />
+      <Header headingText={headingText} zIndex="100" />
+
       <Flex flex="1">
         <Box
-          display={{ base: "none", md: "block" }} // Hide sidebar on mobile
-          position="sticky"
+          display={{ base: "none", md: "block" }}
+          position="fixed"
           top="0"
+          left="0"
           h="100vh"
-          zIndex="100"
+          w="250px"
+          zIndex="200"
         >
           <Sidebar />
         </Box>
@@ -141,82 +135,102 @@ export default function Home() {
           display="flex"
           flexDirection="column"
           gap={8}
+          ml={{ base: 0, md: "250px" }}
+          maxWidth="100%"
         >
           <Stack spacing={8} flex="1">
-            <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
-              <GridItem height="100%" display="flex" flexDirection="column">
-                <Box
-                  border="1px"
-                  borderColor={borderColor}
-                  p={8}
-                  borderRadius="lg"
-                  bg="black"
-                  flex="1"
-                  _hover={{
-                    boxShadow: "0 4px 20px blue",
-                  }}
-                >
-                  <Text
-                    fontSize={{ base: "xl", md: "2xl" }}
-                    fontWeight="bold"
-                    mb={6}
-                    color={headingColor}
-                  >
-                    Analytics Overview
-                  </Text>
-                  <Grid
-                    templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-                    gap={8}
-                  >
-                    {analyticsData.map((item, index) => (
-                      <AnalyticsCard
-                        key={index}
-                        title={item.title}
-                        value={item.value}
-                        bg={cardBg}
-                        color={fontColor}
-                        borderColor={borderColor}
-                        _hover={{
-                          transform: "scale(1.07)",
-                          boxShadow: `0 4px 20px ${hoverShadowColor}`,
-                          transition: "all 0.4s ease-in-out",
-                        }}
-                      />
-                    ))}
-                  </Grid>
-                </Box>
-              </GridItem>
+            {/* Analytics Overview - Full Width */}
+            <Box
+              border="1px"
+              borderColor={borderColor}
+              p={8}
+              borderRadius="lg"
+              bg="black"
+              _hover={{
+                boxShadow: "0 4px 20px blue",
+              }}
+            >
+              <Text
+                fontSize={{ base: "xl", md: "2xl" }}
+                fontWeight="bold"
+                mb={6}
+                color={headingColor}
+              >
+                Analytics Overview
+              </Text>
+              <Grid
+                templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                gap={8}
+              >
+                {analyticsData.map((item, index) => (
+                  <AnalyticsCard
+                    key={index}
+                    title={item.title}
+                    value={item.value}
+                    bg={cardBg}
+                    color={fontColor}
+                    borderColor={borderColor}
+                    _hover={{
+                      transform: "scale(1.07)",
+                      boxShadow: `0 4px 20px ${hoverShadowColor}`,
+                      transition: "all 0.4s ease-in-out",
+                    }}
+                  />
+                ))}
+              </Grid>
+            </Box>
 
-              <GridItem height="100%" display="flex" flexDirection="column">
-                <Box
-                  border="1px"
-                  borderColor={borderColor}
-                  p={8}
-                  borderRadius="lg"
-                  bg="black"
-                  flex="1"
-                  _hover={{
-                    boxShadow: "0 4px 20px blue",
-                  }}
-                >
+            {/* Graph Overview - Below Analytics Overview */}
+            <Box
+              border="1px"
+              borderColor={borderColor}
+              p={8}
+              borderRadius="lg"
+              bg="black"
+              overflowX={{ base: "auto", md: "visible" }}
+              _hover={{
+                boxShadow: "0 4px 20px blue",
+              }}
+            >
+              <Text
+                fontSize={{ base: "xl", md: "2xl" }}
+                fontWeight="bold"
+                mb={6}
+                color={headingColor}
+              >
+                
+              </Text>
+              <Grid
+                templateColumns={{ base: "min(600px, 100%)", md: "1fr 1fr" }}
+                gap={8}
+                alignItems="center"
+              >
+                <Box width={{ base: "100%", md: "85%" }} mx="auto">
                   <Text
-                    fontSize={{ base: "xl", md: "2xl" }}
+                    fontSize={{ base: "lg", md: "xl" }}
                     fontWeight="bold"
-                    mb={6}
                     color={headingColor}
+                    mb={4} // Add margin to separate it from the chart
                   >
-                    Graph Overview
+                    Call Volume Trends
                   </Text>
-                  <Stack spacing={8} flex="1">
-                    {/* Pass the callVolumeTrends data to LineChartComponent */}
-                    <LineChartComponent callVolumeTrends={callVolumeTrends} />
-                    {/* Pass the call data to PieChartComponent */}
-                    <PieChartComponent callData={data} />
-                  </Stack>
+                  <LineChartComponent callVolumeTrends={callVolumeTrends} />
                 </Box>
-              </GridItem>
-            </Grid>
+                <Box width={{ base: "100%", md: "40%" }} mx="auto">
+                  <Text
+                    fontSize={{ base: "lg", md: "xl" }}
+                    fontWeight="bold"
+                    color={headingColor}
+                    mb={4} // Add margin to separate it from the chart
+                  >
+                   Outcome Trends
+                  </Text>
+                  <PieChartComponent callOutcomes={data?.getCallOutcomes} />
+                </Box>
+              </Grid>
+            </Box>
 
+            {/* Additional Sections */}
             <Box
               border="1px"
               borderColor={borderColor}
@@ -236,7 +250,6 @@ export default function Home() {
                 Detailed Graphs
               </Text>
               <Stack spacing={8}>
-                {/* Include BarChartComponent only here */}
                 <BarChartComponent callVolumeTrends={callVolumeTrends} />
               </Stack>
             </Box>
@@ -277,10 +290,12 @@ export default function Home() {
                 fontWeight="bold"
                 mb={6}
                 color={fontColor}
-              >
-                Inspirational Quotes
-              </Text>
-              <ShufflingCards cards={cardsContent} interval={7000} />
+              ></Text>
+              <ShufflingCards
+                cards={quotes}
+                interval={7000}
+                footerContent={footerText}
+              />
             </Box>
           </Stack>
         </Box>

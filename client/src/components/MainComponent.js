@@ -15,7 +15,7 @@ const MainComponent = () => {
 
   return (
     <Box>
-      <Header instagramUrl={instagramUrl} linkedinUrl={linkedinUrl} />
+      
       <SettingsPage 
         instagramUrl={instagramUrl} 
         setInstagramUrl={setInstagramUrl} 

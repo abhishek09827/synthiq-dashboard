@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import {
   Box,
@@ -16,25 +15,30 @@ import {
   Switch,
   IconButton,
   TableContainer,
+  Select,
 } from "@chakra-ui/react";
 import { MdDelete } from "react-icons/md";
 import { CiEdit } from "react-icons/ci";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
+import { Global as EmotionGlobal } from "@emotion/react";
+import { useAlerts } from "./alertsContext"; // Import alerts context
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState([
-    { name: "Call Cost Alert", threshold: 100, active: true },
-    { name: "Duration Alert", threshold: 60, active: false },
-  ]);
-  const [newAlert, setNewAlert] = useState({ name: "", threshold: "", active: false });
+  const { alerts, setAlerts } = useAlerts(); // Use alerts from context
+  const [newAlert, setNewAlert] = useState({
+    name: "",
+    threshold: "",
+    thresholdType: "day",
+    thresholdMeasure: "calls",
+    active: false,
+  });
   const [editingIndex, setEditingIndex] = useState(null);
 
-  // Blue theme colors with orange hover for text
   const cardBg = "rgba(10, 10, 25, 0.9)";
   const borderColor = "gray.600";
-  const fontColor = "white"; // Blue theme font color
-  const hoverColor = "#1662D4"; // Orange color on hover for text
+  const fontColor = "white";
+  const hoverColor = "#1662D4";
   const tableHeaderBg = "#1a202c";
   const hoverBg = "#2d3748";
 
@@ -47,7 +51,7 @@ export default function AlertsPage() {
     } else {
       setAlerts([...alerts, newAlert]);
     }
-    setNewAlert({ name: "", threshold: "", active: false });
+    setNewAlert({ name: "", threshold: "", thresholdType: "day", thresholdMeasure: "calls", active: false });
   };
 
   const handleEditAlert = (index) => {
@@ -61,17 +65,33 @@ export default function AlertsPage() {
   };
 
   return (
-    <Box minHeight="100vh" display="flex" flexDirection="column" bg="black">
-      <Header />
+    <Box maxWidth="100vw" minHeight="100vh" display="flex" flexDirection="column" bg="black">
+      <EmotionGlobal
+        styles={`
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500&display=swap');
+          body {
+            font-family: 'Inter', sans-serif;
+          }
+        `}
+      />
+      <Header alerts={alerts} zIndex="100" />
       <Flex flex="1">
-        {/* Sticky Sidebar */}
-        <Box position="sticky" top="0" h="100vh" zIndex="100">
+        <Box display={{ base: "none", md: "block" }} position="fixed" top="0" left="0" h="100vh" w="250px" zIndex="200">
           <Sidebar />
         </Box>
 
-        <Box as="main" flex="1" p={8} display="flex" flexDirection="column" gap={8}>
-          <Stack spacing={8} flex="1">
-            {/* Alert Configuration Section */}
+        <Box
+          as="main"
+          flex="1"
+          p={8}
+          display="flex"
+          flexDirection="column"
+          ml={{ base: 0, md: "250px" }}
+          height={{ base: "100vh", md: "auto" }}
+          maxWidth={{ base: "90%", md: "auto" }}
+          mx="auto"
+        >
+          <Flex flex="1" display="flex" flexDirection="column" gap={8}>
             <Box
               border="1px"
               borderColor={borderColor}
@@ -80,13 +100,19 @@ export default function AlertsPage() {
               bg={cardBg}
               shadow="2xl"
               transition="all 0.3s"
-              _hover={{ shadow: `0 0 10px 2px ${hoverColor}` }} // Only shadow turns blue on hover
+              _hover={{ shadow: `0 0 10px 2px ${hoverColor}` }}
             >
-              <Text fontSize="2xl" fontWeight="bold" mb={6} color={fontColor} _hover={{ color: hoverColor }}>
+              <Text
+                fontSize={{ base: "xl", md: "2xl" }}
+                fontWeight="bold"
+                mb={6}
+                color={fontColor}
+                fontFamily="Inter"
+                _hover={{ color: hoverColor }}
+              >
                 Custom Alert Configuration
               </Text>
 
-              {/* Form to add/edit alerts */}
               <Stack spacing={4} mb={6}>
                 <Input
                   placeholder="Alert Name"
@@ -97,6 +123,7 @@ export default function AlertsPage() {
                   _hover={{ color: hoverColor }}
                   _placeholder={{ color: "gray.500" }}
                   focusBorderColor={fontColor}
+                  fontWeight="300"
                 />
                 <Input
                   placeholder="Threshold"
@@ -107,9 +134,39 @@ export default function AlertsPage() {
                   _hover={{ color: hoverColor }}
                   _placeholder={{ color: "gray.500" }}
                   focusBorderColor={fontColor}
+                  fontWeight="300"
                 />
+                
+                {/* Threshold Type Selection */}
+                <Select
+                  placeholder="Select Threshold Type"
+                  value={newAlert.thresholdType}
+                  onChange={(e) => setNewAlert({ ...newAlert, thresholdType: e.target.value })}
+                  bg="gray.800"
+                  color={fontColor}
+                  _hover={{ color: hoverColor }}
+                >
+                  <option value="day" style={{ backgroundColor: "black", color: "white" }}>Day</option>
+                  <option value="week" style={{ backgroundColor: "black", color: "white" }}>Week</option>
+                </Select>
+
+                {/* Threshold Measure Selection */}
+                <Select
+                  placeholder="Select Threshold Measure"
+                  value={newAlert.thresholdMeasure}
+                  onChange={(e) => setNewAlert({ ...newAlert, thresholdMeasure: e.target.value })}
+                  bg="gray.800"
+                  color={fontColor}
+                  _hover={{ color: hoverColor }}
+                >
+                  <option value="calls" style={{ backgroundColor: "black", color: "white" }}>Number of Calls </option>
+                  <option value="amount" style={{ backgroundColor: "black", color: "white" }}>Amount </option>
+                </Select>
+
                 <Flex alignItems="center" color={fontColor}>
-                  <Text mr={4} _hover={{ color: hoverColor }}>Active:</Text>
+                  <Text mr={4} _hover={{ color: hoverColor }} fontWeight="300">
+                    Active:
+                  </Text>
                   <Switch
                     isChecked={newAlert.active}
                     onChange={(e) => setNewAlert({ ...newAlert, active: e.target.checked })}
@@ -122,18 +179,20 @@ export default function AlertsPage() {
                   bg="#1662D4"
                   _hover={{ bg: "#007acc", color: hoverColor }}
                   transition="all 0.3s"
+                  width="full"
                 >
                   {editingIndex !== null ? "Update Alert" : "Add Alert"}
                 </Button>
               </Stack>
 
-              {/* Display the alerts in a table */}
               <TableContainer>
                 <Table variant="simple" size="md" bg={cardBg} borderRadius="lg">
                   <Thead bg={tableHeaderBg}>
                     <Tr>
                       <Th color={fontColor} borderBottomColor={borderColor} _hover={{ color: hoverColor }}>Name</Th>
                       <Th color={fontColor} borderBottomColor={borderColor} _hover={{ color: hoverColor }}>Threshold</Th>
+                      <Th color={fontColor} borderBottomColor={borderColor} _hover={{ color: hoverColor }}>Type</Th>
+                      <Th color={fontColor} borderBottomColor={borderColor} _hover={{ color: hoverColor }}>Measure</Th>
                       <Th color={fontColor} borderBottomColor={borderColor} _hover={{ color: hoverColor }}>Active</Th>
                       <Th color={fontColor} borderBottomColor={borderColor} _hover={{ color: hoverColor }}>Actions</Th>
                     </Tr>
@@ -143,21 +202,12 @@ export default function AlertsPage() {
                       <Tr key={index} _hover={{ bg: hoverBg }}>
                         <Td color={fontColor} _hover={{ color: hoverColor }}>{alert.name}</Td>
                         <Td color={fontColor} _hover={{ color: hoverColor }}>{alert.threshold}</Td>
+                        <Td color={fontColor} _hover={{ color: hoverColor }}>{alert.thresholdType}</Td>
+                        <Td color={fontColor} _hover={{ color: hoverColor }}>{alert.thresholdMeasure}</Td>
                         <Td color={fontColor} _hover={{ color: hoverColor }}>{alert.active ? "Yes" : "No"}</Td>
                         <Td>
-                          <IconButton
-                            icon={<CiEdit />}
-                            onClick={() => handleEditAlert(index)}
-                            mr={2}
-                            colorScheme="yellow"
-                            aria-label="Edit alert"
-                          />
-                          <IconButton
-                            icon={<MdDelete />}
-                            onClick={() => handleDeleteAlert(index)}
-                            colorScheme="red"
-                            aria-label="Delete alert"
-                          />
+                          <IconButton icon={<CiEdit />} onClick={() => handleEditAlert(index)} mr={2} colorScheme="yellow" aria-label="Edit alert" />
+                          <IconButton icon={<MdDelete />} onClick={() => handleDeleteAlert(index)} colorScheme="red" aria-label="Delete alert" />
                         </Td>
                       </Tr>
                     ))}
@@ -165,7 +215,7 @@ export default function AlertsPage() {
                 </Table>
               </TableContainer>
             </Box>
-          </Stack>
+          </Flex>
         </Box>
       </Flex>
     </Box>

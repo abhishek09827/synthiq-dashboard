@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -7,6 +7,17 @@ import {
   FormLabel,
   Input,
   Text,
+  SimpleGrid,
+  VStack,
+  Modal,
+  Select,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Checkbox,
   Table,
   Thead,
   Tbody,
@@ -14,109 +25,114 @@ import {
   Th,
   Td,
   useToast,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  VStack,
-  HStack,
-  SimpleGrid,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
 } from "@chakra-ui/react";
-import { IoIosArrowDropdownCircle } from "react-icons/io"; // Importing an icon for the dropdown
-import Header from "./Header"; // Adjust the import path as needed
-import Sidebar from "./Sidebar"; // Adjust the import path as needed
+import Header from "./Header";
+import Sidebar from "./Sidebar";
+import axios from "axios";
 
 const CallExpense = () => {
-  // State variables for the form fields
   const [agencyMargin, setAgencyMargin] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [providerAPI, setProviderAPI] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [monthlyMaintenanceCost, setMonthlyMaintenanceCost] = useState("");
-  const [perMinuteCallFee, setPerMinuteCallFee] = useState("");
   const [billingStartDate, setBillingStartDate] = useState("");
   const [totalCost, setTotalCost] = useState(0);
   const [callHistory, setCallHistory] = useState([]);
+  const [assistants, setAssistants] = useState([]);
+  const [selectedAssistant, setSelectedAssistant] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const toast = useToast();
 
-  // Assistant selection state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAssistant, setSelectedAssistant] = useState("");
+  // Slabs state management
+  const [slabs, setSlabs] = useState([{ rate: "", minutes: 1000 }]);
 
-  // Define a custom blue shadow
-  const blueShadow = "0 4px 6px rgba(66, 153, 225, 0.6)"; // blue.400 with 60% opacity
+  useEffect(() => {
+    const fetchData = async () => {
+      const userId = "user_2nHekPnt5JHC1R2sn5Y1GygO4Id";
+      try {
+        const response = await axios.post(
+          "http://localhost:3000/api/call-logs",
+          { id: userId },
+          { headers: { "Content-Type": "application/json" } }
+        );
 
-  // Define assistant options
-  const assistants = [
-    { name: "Assistant A", fee: 0.05 },
-    { name: "Assistant B", fee: 0.07 },
-    { name: "Assistant C", fee: 0.10 },
-    // Add more assistants as needed
-  ];
+        const data = response.data?.callLogs || [];
+        const fetchedAssistants = data.map((log) => ({
+          name: log.assistantid || "Default Assistant",
+          fee: log.cost || 0.05,
+        }));
 
-  // Modal control functions
+        setAssistants(fetchedAssistants);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError(error.message);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  // Handler for assistant selection
   const handleAssistantSelect = (assistant) => {
     setSelectedAssistant(assistant.name);
-    setPerMinuteCallFee(assistant.fee);
     closeModal();
     toast({
       title: "Assistant Selected",
-      description: `${assistant.name} selected with a per minute fee of $${assistant.fee.toFixed(2)}.`,
+      description: `${assistant.name} with call fee of ${assistant.fee} selected.`,
       status: "success",
       duration: 3000,
       isClosable: true,
     });
   };
 
-  // Handler for calculating total cost
+  const handleAddSlab = () => {
+    setSlabs([...slabs, { rate: "", minutes: 1000 }]);
+  };
+
+  const handleSlabChange = (index, field, value) => {
+    const newSlabs = [...slabs];
+    newSlabs[index][field] = value;
+    setSlabs(newSlabs);
+  };
+
   const handleCalculate = () => {
-    const margin = parseFloat(agencyMargin);
-    const maintenance = parseFloat(monthlyMaintenanceCost);
-    const perMinute = parseFloat(perMinuteCallFee);
+    const margin = parseFloat(agencyMargin) || 0;
+    const maintenance = parseFloat(monthlyMaintenanceCost) || 0;
+    let total = maintenance;
 
-    // Validate input
-    if (
-      selectedAssistant.trim() === "" ||
-      isNaN(margin) ||
-      isNaN(maintenance) ||
-      isNaN(perMinute) ||
-      margin < 0 ||
-      maintenance < 0 ||
-      perMinute < 0
-    ) {
-      toast({
-        title: "Invalid input",
-        description: "Please select an assistant and enter valid data for all fields.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
+    const selectedAssistantFee =
+      assistants.find((assistant) => assistant.name === selectedAssistant)
+        ?.fee || 0;
 
-    const fixedMinutes = 100; // Example: 100 minutes
-    const total = maintenance + perMinute * fixedMinutes;
+    let remainingMinutes = 3000; // Example: assuming 3000 minutes
+    slabs.forEach((slab, index) => {
+      const rate =
+        parseFloat(slab.rate) || (index === 0 ? selectedAssistantFee : 0);
+      const minutes = Math.min(
+        remainingMinutes,
+        parseInt(slab.minutes) || 1000
+      );
+      total += rate * minutes;
+      remainingMinutes -= minutes;
+    });
+
+    total = total + (total * margin) / 100;
     setTotalCost(total);
 
-    // Add to call history
-    setCallHistory([
-      ...callHistory,
+    setCallHistory((prev) => [
+      ...prev,
       {
         assistant: selectedAssistant,
         margin,
         maintenance,
-        perMinute,
+        slabs,
         total,
         currency,
         providerAPI,
@@ -125,25 +141,15 @@ const CallExpense = () => {
       },
     ]);
 
-    // Reset inputs
-    setAgencyMargin("");
-    setProviderAPI("");
-    setApiKey("");
-    setMonthlyMaintenanceCost("");
-    setPerMinuteCallFee("");
-    setSelectedAssistant("");
-    setBillingStartDate("");
-
     toast({
-      title: "Expense Added",
-      description: `Total cost calculated: ${currency} ${total.toFixed(2)}`,
+      title: "Calculation Complete",
+      description: `Total cost calculated: $${total.toFixed(2)}`,
       status: "success",
       duration: 3000,
       isClosable: true,
     });
   };
 
-  // Handler to clear call history
   const handleClearHistory = () => {
     setCallHistory([]);
     toast({
@@ -155,251 +161,282 @@ const CallExpense = () => {
     });
   };
 
-  // Handler to export call history to CSV
-  const handleExportCSV = () => {
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [
-        [
-          "Assistant",
-          "Margin (%)",
-          "Maintenance Cost",
-          "Per Minute Fee",
-          "Total",
-          "Currency",
-          "Provider API",
-          "API Key",
-          "Billing Start Date",
-        ],
-        ...callHistory.map((e) => [
-          e.assistant,
-          e.margin.toFixed(2),
-          e.maintenance.toFixed(2),
-          e.perMinute.toFixed(2),
-          e.total.toFixed(2),
-          e.currency,
-          e.providerAPI,
-          e.apiKey,
-          e.billingStartDate,
-        ]),
-      ]
-        .map((e) => e.join(","))
-        .join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "call_expenses.csv");
-    document.body.appendChild(link);
-    link.click();
-  };
-
   return (
     <Box minHeight="100vh" bg="black" color="white">
-      {/* Header Section */}
-      <Header />
-
-      {/* Main Layout with Sidebar and Content */}
-      <Flex direction={{ base: "column", md: "row" }}>
-        {/* Sidebar */}
+      <Flex direction={{ base: "column", md: "row" }} overflow="hidden">
         <Box
-          width={{ base: "full", md: "250px" }}
+          width={{ base: "100%", md: "250px" }}
           bg="black"
-          display={{ base: "none", md: "block" }}
-          position="sticky"
-          top="0"
-          h="100vh"
-          zIndex="100"
+          position={{ base: "relative", md: "sticky" }}
+          top={{ base: "auto", md: "0" }}
+          minHeight={{ base: "auto", md: "100vh" }}
         >
           <Sidebar />
         </Box>
 
-        {/* Main Content Area */}
-        <Flex
+        <Box
           flex="1"
+          ml={{ base: 0, md: 4 }}
           p={{ base: 4, md: 8 }}
-          direction="column"
-          gap={8}
           overflowY="auto"
+          maxHeight={{ base: "calc(100vh - 60px)", md: "auto" }}
         >
-          {/* Page Title */}
-          <Text
-            fontSize={{ base: "lg", md: "2xl" }}
-            fontWeight="bold"
-            color="#1662D4"
-            textAlign={{ base: "center", md: "left" }}
+          <Header />
+          <Flex
+            direction="column"
+            gap={8}
+            overflowY="auto"
+            maxWidth="1200px"
+            mx="auto"
           >
-            Call Expense Entry
-          </Text>
+            <Text
+              fontSize={{ base: "lg", md: "2xl" }}
+              fontWeight="bold"
+              color="#1662D4"
+              textAlign="center"
+            >
+              Call Expense Entry
+            </Text>
 
-          {/* Assistant Selection Modal */}
-          <Modal isOpen={isModalOpen} onClose={closeModal}>
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>
-                Choose an Assistant to Set the Per Minute Fee
-              </ModalHeader>
-              <ModalCloseButton />
-              <ModalBody>
-                <VStack spacing={4} align="stretch">
-                  {assistants.map((assistant) => (
-                    <Button
-                      key={assistant.name}
-                      bg="#1662D4"
+            <Box
+              bg="gray.800"
+              p={6}
+              borderRadius="lg"
+              border="1px"
+              borderColor="gray.700"
+              maxWidth="800px"
+              mx="auto"
+            >
+              <VStack spacing={6} align="stretch">
+                <FormControl>
+                  <FormLabel color="white">Assistant</FormLabel>
+                  <Button onClick={openModal} colorScheme="blue" width="full">
+                    {selectedAssistant ? selectedAssistant : "Select Assistant"}
+                  </Button>
+                </FormControl>
+
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  <FormControl>
+                    <FormLabel color="white">Agency Margin (%)</FormLabel>
+                    <Input
+                      type="number"
+                      value={agencyMargin}
+                      onChange={(e) => setAgencyMargin(e.target.value)}
+                      placeholder="Enter agency margin"
+                      bg="gray.700"
                       color="white"
-                      onClick={() => handleAssistantSelect(assistant)}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel color="white">
+                      Monthly Maintenance Cost
+                    </FormLabel>
+                    <Input
+                      type="number"
+                      value={monthlyMaintenanceCost}
+                      onChange={(e) =>
+                        setMonthlyMaintenanceCost(e.target.value)
+                      }
+                      placeholder="Enter maintenance cost"
+                      bg="gray.700"
+                      color="white"
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel color="white">Currency</FormLabel>
+                    <Input
+                      type="text"
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      placeholder="Enter currency"
+                      bg="gray.700"
+                      color="white"
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel color="white">Provider API</FormLabel>
+                    <Select
+                      value={providerAPI}
+                      onChange={(e) => setProviderAPI(e.target.value)}
+                      defaultValue=""
+                      bg="gray.700" // Set the background of the dropdown to black
+                      color="white"
+                      border="1px"
+                      borderColor="white"
+                      _hover={{ borderColor: "#1662D4" }}
+                      _focus={{
+                        borderColor: "#1662D4",
+                        boxShadow: "0 0 0 1px #1662D4",
+                      }}
+                      sx={{
+                        option: {
+                          backgroundColor: "black", // Options background color
+                          color: "white",
+                          _hover: { backgroundColor: "#1662D4" }, // Highlighted option on hover
+                          _selected: { backgroundColor: "#1662D4" }, // Selected option background
+                        },
+                      }}
                     >
-                      {assistant.name} - ${assistant.fee.toFixed(2)} / min
-                    </Button>
-                  ))}
-                </VStack>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="ghost" onClick={closeModal}>
-                  Cancel
+                      <option
+                        value=""
+                        disabled
+                        style={{ backgroundColor: "black" }}
+                      >
+                        Select Provider API
+                      </option>
+                      <option value="Vapi">Vapi</option>
+                      <option value="Retell">Retell</option>
+                    </Select>
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel color="white">API Key</FormLabel>
+                    <Input
+                      type="text"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="Enter API key"
+                      bg="gray.700"
+                      color="white"
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel color="white">Billing Start Date</FormLabel>
+                    <Input
+                      type="date"
+                      value={billingStartDate}
+                      onChange={(e) => setBillingStartDate(e.target.value)}
+                      placeholder="Select billing start date"
+                      bg="gray.700"
+                      color="white"
+                    />
+                  </FormControl>
+                </SimpleGrid>
+
+                <Button
+                  onClick={handleAddSlab}
+                  colorScheme="green"
+                  width="full"
+                >
+                  Add Slab
                 </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
 
-          {/* Call Expense Entry Form */}
-          <Box
-            bg="black"
-            p={6}
-            borderRadius="lg"
-            boxShadow={blueShadow} // Apply custom blue shadow
-            border="1px"
-            borderColor="black"
-          >
-            <VStack spacing={6} align="stretch">
-              {/* Assistant Selection */}
-              <FormControl>
-                <FormLabel color="white">Assistant</FormLabel>
-                <Button onClick={openModal} colorScheme="blue" width="full">
-                  {selectedAssistant ? selectedAssistant : "Select Assistant"}
+                {slabs.map((slab, index) => (
+                  <SimpleGrid columns={2} spacing={4} key={index}>
+                    <FormControl>
+                      <FormLabel color="white">
+                        Per Minute Slab {index + 1}
+                      </FormLabel>
+                      <Input
+                        type="number"
+                        value={slab.rate}
+                        onChange={(e) =>
+                          handleSlabChange(index, "rate", e.target.value)
+                        }
+                        placeholder={`Enter rate for slab ${index + 1}`}
+                        bg="gray.700"
+                        color="white"
+                      />
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel color="white">
+                        Minutes for Slab {index + 1}
+                      </FormLabel>
+                      <Input
+                        type="number"
+                        value={slab.minutes}
+                        onChange={(e) =>
+                          handleSlabChange(index, "minutes", e.target.value)
+                        }
+                        placeholder={`Enter minutes for slab ${index + 1}`}
+                        bg="gray.700"
+                        color="white"
+                      />
+                    </FormControl>
+                  </SimpleGrid>
+                ))}
+
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  onClick={handleCalculate}
+                >
+                  Calculate Total
                 </Button>
-              </FormControl>
-
-              {/* Agency Margin Input */}
-              <FormControl>
-                <FormLabel color="white">Agency Margin (%)</FormLabel>
-                <Input
-                  type="number"
-                  value={agencyMargin}
-                  onChange={(e) => setAgencyMargin(e.target.value)}
-                  placeholder="Enter agency margin"
-                  bg="black"
-                  color="white"
-                />
-              </FormControl>
-
-              {/* Additional Cost Inputs */}
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                {/* Monthly Maintenance Cost */}
-                <FormControl>
-                  <FormLabel color="white">Monthly Maintenance Cost</FormLabel>
-                  <Input
-                    type="number"
-                    value={monthlyMaintenanceCost}
-                    onChange={(e) => setMonthlyMaintenanceCost(e.target.value)}
-                    placeholder="Enter monthly cost"
-                    bg="black"
-                    color="white"
-                  />
-                </FormControl>
-
-                {/* Per Minute Call Fee */}
-                <FormControl>
-                  <FormLabel color="white">Per Minute Call Fee</FormLabel>
-                  <Input
-                    type="number"
-                    value={perMinuteCallFee}
-                    onChange={(e) => setPerMinuteCallFee(e.target.value)}
-                    placeholder="Enter per minute call fee"
-                    bg="black"
-                    color="white"
-                    isReadOnly
-                  />
-                </FormControl>
-              </SimpleGrid>
-
-              {/* Billing Start Date */}
-              <FormControl>
-                <FormLabel color="white">Billing Start Date</FormLabel>
-                <Input
-                  type="date"
-                  value={billingStartDate}
-                  onChange={(e) => setBillingStartDate(e.target.value)}
-                  bg="black"
-                  color="white"
-                />
-              </FormControl>
-
-              {/* Calculate Button */}
-              <Button
-                colorScheme="blue"
-                onClick={handleCalculate}
-                width={{ base: "full", md: "auto" }}
-              >
-                Calculate
-              </Button>
-            </VStack>
-          </Box>
-
-          {/* Call History Table */}
-          {callHistory.length > 0 && (
-            <Box overflowX="auto">
-              <Table size="sm" variant="simple" colorScheme="blue">
-                <Thead>
-                  <Tr>
-                    <Th color="white">Assistant</Th>
-                    <Th color="white">Margin (%)</Th>
-                    <Th color="white">Maintenance</Th>
-                    <Th color="white">Per Minute Fee</Th>
-                    <Th color="white">Total</Th>
-                    <Th color="white">Currency</Th>
-                    <Th color="white">API Provider</Th>
-                    <Th color="white">API Key</Th>
-                    <Th color="white">Billing Start Date</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {callHistory.map((entry, index) => (
-                    <Tr key={index}>
-                      <Td>{entry.assistant}</Td>
-                      <Td>{entry.margin.toFixed(2)}</Td>
-                      <Td>{entry.maintenance.toFixed(2)}</Td>
-                      <Td>{entry.perMinute.toFixed(2)}</Td>
-                      <Td>{entry.total.toFixed(2)}</Td>
-                      <Td>{entry.currency}</Td>
-                      <Td>{entry.providerAPI}</Td>
-                      <Td>{entry.apiKey}</Td>
-                      <Td>{entry.billingStartDate}</Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+                <Button
+                  colorScheme="red"
+                  width="full"
+                  onClick={handleClearHistory}
+                >
+                  Clear History
+                </Button>
+              </VStack>
             </Box>
-          )}
 
-          {/* Clear History and Export Buttons */}
-          <HStack justify="space-between">
-            <Button
-              colorScheme="red"
-              onClick={handleClearHistory}
-              width={{ base: "full", md: "auto" }}
-            >
-              Clear History
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={handleExportCSV}
-              width={{ base: "full", md: "auto" }}
-            >
-              Export to CSV
-            </Button>
-          </HStack>
-        </Flex>
+            {/* New Flex container for the table */}
+            <Flex direction="column" maxWidth="800px" mx="auto" mt={8}>
+              <Box overflowX="auto">
+                <Table colorScheme="gray">
+                  <Thead bg="blue.900">
+                    <Tr>
+                      <Th color="white">Assistant</Th>
+                      <Th color="white">Agency Margin</Th>
+                      <Th color="white">Maintenance Cost</Th>
+                      <Th color="white">Currency</Th>
+                      <Th color="white">Provider API</Th>
+                      <Th color="white">API Key</Th>
+                      <Th color="white">Billing Start Date</Th>
+                      <Th color="white">Total Cost</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {callHistory.map((log, index) => (
+                      <Tr key={index}>
+                        <Td>{log.assistant}</Td>
+                        <Td>{log.margin}%</Td>
+                        <Td>${log.maintenance}</Td>
+                        <Td>{log.currency}</Td>
+                        <Td>{log.providerAPI}</Td>
+                        <Td>{log.apiKey}</Td>
+                        <Td>{log.billingStartDate}</Td>
+                        <Td>${log.total.toFixed(2)}</Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
+            </Flex>
+          </Flex>
+        </Box>
       </Flex>
+
+      <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <ModalOverlay />
+        <ModalContent bg="gray.900" color="white">
+          <ModalHeader>Select Assistant</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {assistants.map((assistant, index) => (
+              <Checkbox
+                key={index}
+                value={assistant.name}
+                onChange={() => handleAssistantSelect(assistant)}
+              >
+                {assistant.name} - ${assistant.fee}/min
+              </Checkbox>
+            ))}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={closeModal}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

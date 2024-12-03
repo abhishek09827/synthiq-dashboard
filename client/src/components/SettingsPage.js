@@ -3,9 +3,17 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar"; // Adjust the import path as necessary
-import { FaUser, FaLock, FaBell, FaGlobe, FaMoneyBillWave } from 'react-icons/fa';
+import Header from "@/components/Header"; // Import your Header component
+import { FaUser, FaLock, FaBell, FaGlobe } from 'react-icons/fa';
+import { useNavigate } from "react-router-dom";
+
+// Import Google Fonts
+const interFont = {
+  fontFamily: "'Inter', sans-serif",
+};
 
 const SettingsPage = () => {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
@@ -52,26 +60,51 @@ const SettingsPage = () => {
     setConfirmPassword("");
   };
 
+  const navigateToKnowledgeBase = () => {
+    navigate("/knowledge-base"); // Navigate to the knowledge base page
+  };
+
   return (
     <Box bg="black" minH="100vh">
-      <Flex direction={{ base: "column", md: "row" }} height="100vh">
+      {/* Google Fonts Import */}
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500&display=swap');
+        `}
+      </style>
+      <Flex>
         {/* Sidebar */}
-        <Box display={{ base: "block", md: "block" }}>
+        <Box
+          display={{ base: "none", md: "block" }}
+          position="fixed"
+          top="0"
+          left="0"
+          h="100vh"
+          w="250px"
+          bg="gray.900"
+          zIndex="1"
+        >
           <Sidebar />
         </Box>
 
         {/* Main content */}
-        <Flex flex="1" p={{ base: 4, md: 8 }} justify="center">
-          <Box w="100%" maxW="800px" mx="auto">
-            <Card bg="black" p={8} borderRadius="md" shadow="xl">
+        <Box
+          ml={{ base: 0, md: "250px" }} // Adjust the margin-left based on sidebar width
+          flex="1"
+          p={{ base: 4, md: 8 }}
+        >
+          <Header zIndex="100" /> {/* Add Header here */}
+
+          <Box w="100%" maxW="800px" mx="auto" mt={4}> {/* Add margin top for spacing */}
+            <Card bg="rgba(10, 10, 25, 0.9)" border="white" p={8} borderRadius="md" shadow="xl">
               <CardBody>
-                <Heading color="blue.400" mb={6} textAlign="center">
+                <Heading color="blue.400" mb={6} textAlign="center" style={interFont}>
                   User Settings
                 </Heading>
 
                 {/* Profile Information Section */}
                 <Box mb={8}>
-                  <Heading size="md" color="white" mb={4}>
+                  <Heading size="md" color="white" mb={4} style={interFont}>
                     <Icon as={FaUser} mr={2} /> Profile Information
                   </Heading>
                   <Stack spacing={4}>
@@ -97,7 +130,7 @@ const SettingsPage = () => {
 
                 {/* Social Media URLs */}
                 <Box mb={8}>
-                  <Heading size="md" color="white" mb={4}>
+                  <Heading size="md" color="white" mb={4} style={interFont}>
                     Social Media Links
                   </Heading>
                   <Stack spacing={4}>
@@ -126,7 +159,7 @@ const SettingsPage = () => {
 
                 {/* Notification Preferences */}
                 <Box mb={8}>
-                  <Heading size="md" color="white" mb={4}>
+                  <Heading size="md" color="white" mb={4} style={interFont}>
                     <Icon as={FaBell} mr={2} /> Notifications
                   </Heading>
                   <Stack spacing={4}>
@@ -146,14 +179,14 @@ const SettingsPage = () => {
                       colorScheme="blue"
                       color="white"
                     >
-                      Slack Notification
+                      Slack Notifications
                     </Checkbox>
                   </Stack>
                 </Box>
 
                 {/* Time Zone and Currency */}
                 <Box mb={8}>
-                  <Heading size="md" color="white" mb={4}>
+                  <Heading size="md" color="white" mb={4} style={interFont}>
                     <Icon as={FaGlobe} mr={2} /> Time Zone & Currency
                   </Heading>
                   <Flex justify="space-between" direction={{ base: "column", md: "row" }}>
@@ -163,9 +196,15 @@ const SettingsPage = () => {
                       bg="black"
                       color="white"
                       _placeholder={{ color: "gray.400" }}
-                      _focus={{ borderColor: "#FF9A00", boxShadow: "0 0 0 1px #FF9A00" }}
+                      _focus={{ borderColor: "white", boxShadow: "0 0 0 1px" }}
                       mb={{ base: 4, md: 0 }}
                       mr={{ md: 2 }}
+                      sx={{
+                        option: {
+                          bg: "black",
+                          color: "white",
+                        },
+                      }}
                     >
                       <option value="" disabled>
                         Select Time Zone
@@ -184,12 +223,18 @@ const SettingsPage = () => {
                       color="white"
                       _placeholder={{ color: "gray.400" }}
                       _focus={{ borderColor: "#FF9A00", boxShadow: "0 0 0 1px #FF9A00" }}
+                      sx={{
+                        option: {
+                          bg: "black",
+                          color: "white",
+                        },
+                      }}
                     >
                       <option value="" disabled>
                         Select Currency
                       </option>
                       {currencies.map((curr) => (
-                        <option key={curr} value={curr}>
+                        <option  key={curr} value={curr}>
                           {curr}
                         </option>
                       ))}
@@ -201,7 +246,7 @@ const SettingsPage = () => {
 
                 {/* Change Password Section */}
                 <Box mb={8}>
-                  <Heading size="md" color="white" mb={4}>
+                  <Heading size="md" color="white" mb={4} style={interFont}>
                     <Icon as={FaLock} mr={2} /> Change Password
                   </Heading>
                   <Stack spacing={4}>
@@ -243,20 +288,27 @@ const SettingsPage = () => {
                   </Stack>
                 </Box>
 
-                {/* Save Button */}
+                <Button
+                  onClick={navigateToKnowledgeBase}
+                  colorScheme="teal"
+                  w="full"
+                  mt={4}
+                >
+                  Go to Knowledge Base
+                </Button>
+
                 <Button
                   onClick={handleSaveProfile}
                   colorScheme="blue"
-                  size="lg"
                   w="full"
-                  mt={6}
+                  mt={4}
                 >
-                  Save Changes
+                  Save Profile
                 </Button>
               </CardBody>
             </Card>
           </Box>
-        </Flex>
+        </Box>
       </Flex>
     </Box>
   );

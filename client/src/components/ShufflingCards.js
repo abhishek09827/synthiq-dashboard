@@ -1,6 +1,6 @@
-// ShufflingCards.js
 import React, { useState, useEffect } from 'react';
-import { Box, Text, keyframes, usePrefersReducedMotion } from '@chakra-ui/react';
+import { Box, Text, usePrefersReducedMotion, Divider } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 
 // Define keyframes for fade in and fade out
 const fadeIn = keyframes`
@@ -13,13 +13,18 @@ const fadeOut = keyframes`
   to { opacity: 0; }
 `;
 
-const ShufflingCards = ({ cards, interval = 5000 }) => { // interval in ms
+const ShufflingCards = ({ cards, interval = 5000, footerContent }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (prefersReducedMotion) {
-      return; // Skip animations for users who prefer reduced motion
+    setIsClient(true); // Ensures this is running on the client side only
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !isClient) {
+      return; // Skip animations for users who prefer reduced motion or if not on the client side
     }
 
     const timer = setInterval(() => {
@@ -27,7 +32,7 @@ const ShufflingCards = ({ cards, interval = 5000 }) => { // interval in ms
     }, interval);
 
     return () => clearInterval(timer); // Cleanup on unmount
-  }, [cards.length, interval, prefersReducedMotion]);
+  }, [cards.length, interval, prefersReducedMotion, isClient]);
 
   // Determine the animation based on the change
   const animation = prefersReducedMotion
@@ -38,37 +43,47 @@ const ShufflingCards = ({ cards, interval = 5000 }) => { // interval in ms
     <Box
       width="100%"
       maxWidth="600px"
-      height="200px"
-      bg="black" // Changed from gray.800 to black
+      height="300px" // Adjusted height to accommodate footer
+      bg="black"
       borderRadius="md"
       boxShadow="lg"
       display="flex"
-      alignItems="center"
-      justifyContent="center"
+      flexDirection="column"
+      justifyContent="space-between" // Ensure space between card content and footer
       position="relative"
       overflow="hidden"
       mx="auto"
       p={4}
     >
-      {cards.map((card, index) => (
-        <Box
-          key={index}
-          position="absolute"
-          width="100%"
-          textAlign="center"
-          color="white" // Bright color for contrast
-          fontSize={{ base: 'md', md: 'lg', lg: 'xl' }}
-          fontStyle="italic"
-          bg="black" // Ensure each card has a black background
-          borderRadius="md" // Optional: Add rounded corners to each card
-          p={6} // Optional: Add padding for better text spacing
-          opacity={index === currentIndex ? 1 : 0}
-          animation={index === currentIndex && !prefersReducedMotion ? animation : undefined}
-          transition="opacity 1s ease-in-out"
-        >
-          "{card}"
-        </Box>
-      ))}
+      <Box flex="1" display="flex" alignItems="center" justifyContent="center">
+        {cards.map((card, index) => (
+          <Box
+            key={index}
+            position="absolute"
+            width="100%"
+            textAlign="center"
+            color="white"
+            fontSize={{ base: 'md', md: 'lg', lg: 'xl' }}
+            fontStyle="italic"
+            bg="black"
+            borderRadius="md"
+            p={6}
+            opacity={index === currentIndex ? 1 : 0}
+            animation={index === currentIndex && !prefersReducedMotion ? animation : undefined}
+            transition="opacity 1s ease-in-out"
+          >
+            "{card}"
+          </Box>
+        ))}
+      </Box>
+
+      {/* Footer Section */}
+      <Box as="footer" mt={4}>
+        <Divider borderColor="gray.600" />
+        <Text color="gray.400" fontSize="sm" textAlign="center" mt={2}>
+          {footerContent}
+        </Text>
+      </Box>
     </Box>
   );
 };
